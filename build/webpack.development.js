@@ -23,7 +23,7 @@ module.exports = merge(baseConfigs, {
   devServer: {
     stats: { chunks:false },
     contentBase: './playground',
-    port: 5998,
+    port: 1111,
     hot: true
   }
 })
