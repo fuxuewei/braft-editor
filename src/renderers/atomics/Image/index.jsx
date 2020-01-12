@@ -211,7 +211,7 @@ export default class Image extends React.Component {
                     <input
                       type="text"
                       placeholder={"写点文字注解吧"}
-                      onKeyDown={this.handleSizeInputKeyDown}
+                      onKeyDown={this.handleTipInputKeyDown}
                       onChange={this.settipText}
                       defaultValue={this.state.tipText}
                     />
@@ -263,7 +263,6 @@ export default class Image extends React.Component {
           {/* 图注 */}
           <div
             style={{
-              marginLeft: `${-width}px`,
               color: "#6a6f7b",
               textAlign: "center",
               fontSize:"14px"
@@ -272,7 +271,7 @@ export default class Image extends React.Component {
             data-float={float}
             data-align={alignment}
           >
-            <span>{this.state.tipText}</span>
+            <span>{tipText}</span>
           </div>
         </div>
         {clearFix && (
@@ -406,6 +405,14 @@ export default class Image extends React.Component {
   handleLinkInputKeyDown = (e) => {
     if (e.keyCode === 13) {
       this.confirmImageLink();
+    } else {
+      return;
+    }
+  };
+
+  handleTipInputKeyDown = (e) => {
+    if (e.keyCode === 13) {
+      this.confirmtipText();
     } else {
       return;
     }
