@@ -4,7 +4,7 @@ import { ContentUtils } from "braft-utils";
 import Switch from "components/common/Switch";
 import { imageControlItems } from "configs/controls";
 
-export default class Image extends React.Component {
+export default class MediaComponent extends React.Component {
   state = {
     toolbarVisible: false,
     tipText:"",
