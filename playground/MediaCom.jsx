@@ -76,6 +76,7 @@ export default class MediaComponent extends React.Component {
 
   render() {
     const { mediaData, language, imageControls, imageResizable } = this.props;
+    console.log(mediaData)
     const {
       toolbarVisible,
       toolbarOffset,

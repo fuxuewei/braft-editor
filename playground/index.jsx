@@ -192,8 +192,7 @@ class Demo extends React.Component {
         { tipText },
       ),
     });
-    ContentUtils.insertAtomicBlock(editorState, "text", true, { tipText });
-    console.log(this.logRAW());
+    ContentUtils.insertAtomicBlock(this.state.editorState, "text", true, { tipText });
     // window.setImmediate(this.props.editor.forceRender);
   };
 
@@ -289,20 +288,23 @@ class Demo extends React.Component {
 
   myBlockRenderer = (contentBlock) => {
     const type = contentBlock.getType();
-    if(type==="atomics"){
-      const block = contentState.getBlockForKey(block.key);
+    if(type==="atomic"){
 
       const contentState = this.state.editorState.getCurrentContent();
+      const block = contentState.getBlockForKey(contentBlock.key);
+
       const entityKey = block.getEntityAt(0);
       const entity = contentState.getEntity(entityKey);
       const mediaType = entity.getType();
+      const mediaData = entity.getData()
+      console.log(mediaData)
   
       if (mediaType === "IMAGE") {
         const mediaData = entity.getData();
         const { superProps } = this;
         const mediaProps = {
           ...superProps,
-          block: props.block,
+          block: contentBlock,
           mediaData,
           entityKey,
         };
