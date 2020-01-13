@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import BraftEditor from "../src";
 import ColorPicker from "braft-extensions/dist/color-picker";
+import { Editor, EditorState } from 'draft-js'
+import { Map } from 'immutable'
 import Table from "braft-extensions/dist/table";
 import { ContentUtils } from "braft-utils";
 import CodeHighlighter from "braft-extensions/dist/code-highlighter";
@@ -11,6 +13,7 @@ import "braft-extensions/dist/color-picker.css";
 import "braft-extensions/dist/table.css";
 import "braft-extensions/dist/code-highlighter.css";
 import MediaComponent from "./MediaCom.jsx";
+import {getPropInterceptors } from 'helpers/extension'
 
 const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
   if (!block || !block.key) {
@@ -225,9 +228,10 @@ class Demo extends React.Component {
     "size",
     "remove",
   ];
+
+
   constructor(props) {
     super(props);
-
     this.state = {
       count: 0,
       tipText: "",
@@ -286,6 +290,27 @@ class Demo extends React.Component {
     };
   }
 
+  getEditorProps (props) {
+
+    props = props || this.props
+
+    const {value, defaultValue, onChange, ...restProps} = props// eslint-disable-line no-unused-vars
+    const propInterceptors = getPropInterceptors(restProps.editorId || restProps.id)
+
+    if (propInterceptors.length === 0) {
+      return restProps
+    }
+
+    let porpsMap = Map(restProps)
+
+    propInterceptors.forEach(interceptor => {
+      porpsMap = porpsMap.merge(Map(interceptor(porpsMap.toJS(), this) || {}))
+    })
+
+    return porpsMap.toJS()
+
+  }
+
   myBlockRenderer = (contentBlock) => {
     const type = contentBlock.getType();
     if(type==="atomic"){
@@ -297,21 +322,28 @@ class Demo extends React.Component {
       const entity = contentState.getEntity(entityKey);
       const mediaType = entity.getType();
       const mediaData = entity.getData()
-      console.log(mediaData)
   
       if (mediaType === "IMAGE") {
         const mediaData = entity.getData();
-        const { superProps } = this;
+        let superProps = this;
+        let editor = {...this.state.editorState}
+
+        editor.editorProps = this.getEditorProps(this.props)
+        editor.lockOrUnlockEditor = BraftEditor.lockOrUnlockEditor
+        console.log(superProps)
+
         const mediaProps = {
+          editor,
           ...superProps,
           block: contentBlock,
           mediaData,
           entityKey,
+          imageControls:this.imageControls
         };
+        const Com= () => <MediaComponent {...mediaProps} />
         return {
-          component: MediaComponent,
+          component: Com,
           editable: false,
-          props: { ...mediaProps },
         };
       }
     }
