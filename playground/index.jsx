@@ -2,8 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import BraftEditor from "../src";
 import ColorPicker from "braft-extensions/dist/color-picker";
-import { Editor, EditorState } from 'draft-js'
-import { Map } from 'immutable'
+import { Editor, EditorState } from "draft-js";
+import { Map } from "immutable";
 import Table from "braft-extensions/dist/table";
 import { ContentUtils } from "braft-utils";
 import CodeHighlighter from "braft-extensions/dist/code-highlighter";
@@ -13,8 +13,11 @@ import "braft-extensions/dist/color-picker.css";
 import "braft-extensions/dist/table.css";
 import "braft-extensions/dist/code-highlighter.css";
 import MediaComponent from "./MediaCom.jsx";
-import {getPropInterceptors } from 'helpers/extension'
-
+import { getPropInterceptors } from "helpers/extension";
+import Video from 'renderers/atomics/Video'
+import Audio from 'renderers/atomics/Audio'
+import Embed from 'renderers/atomics/Embed'
+import HorizontalLine from 'renderers/atomics/HorizontalLine'
 const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
   if (!block || !block.key) {
     return <p></p>;
@@ -195,40 +198,19 @@ class Demo extends React.Component {
         { tipText },
       ),
     });
-    ContentUtils.insertAtomicBlock(this.state.editorState, "text", true, { tipText });
+    ContentUtils.insertAtomicBlock(this.state.editorState, "text", true, {
+      tipText,
+    });
     // window.setImmediate(this.props.editor.forceRender);
   };
 
   imageControls = [
-    "float-left",
-    "float-right",
-    {
-      text: "Foo", // 指定控件文字，可传入jsx
-      render: (mediaData, block) => {
-        return (
-          <div className="bf-image-link-editor">
-            <div className="editor-input-group">
-              <input
-                type="text"
-                placeholder={"写点文字注解吧"}
-                onKeyDown={(e) => this.handleTipInputKeyDown(e, block)}
-                onChange={this.settipText}
-                defaultValue={this.state.tipText}
-              />
-              <button type="button" onClick={this.confirmtipText(block)}>
-                确认
-              </button>
-            </div>
-          </div>
-        );
-      }, // 控件渲染函数，该属性指定时，text和onClick属性将被忽略
-      onClick: (block) => {}, // 指定控件点击后的回调，参数为当前图片的block对象
-    },
+    // "float-left",
+    // "float-right",
     "link",
     "size",
     "remove",
   ];
-
 
   constructor(props) {
     super(props);
@@ -290,67 +272,77 @@ class Demo extends React.Component {
     };
   }
 
-  getEditorProps (props) {
+  getEditorProps(props) {
+    props = props || this.props;
 
-    props = props || this.props
-
-    const {value, defaultValue, onChange, ...restProps} = props// eslint-disable-line no-unused-vars
-    const propInterceptors = getPropInterceptors(restProps.editorId || restProps.id)
+    const { value, defaultValue, onChange, ...restProps } = props; // eslint-disable-line no-unused-vars
+    const propInterceptors = getPropInterceptors(
+      restProps.editorId || restProps.id,
+    );
 
     if (propInterceptors.length === 0) {
-      return restProps
+      return restProps;
     }
 
-    let porpsMap = Map(restProps)
+    let porpsMap = Map(restProps);
 
-    propInterceptors.forEach(interceptor => {
-      porpsMap = porpsMap.merge(Map(interceptor(porpsMap.toJS(), this) || {}))
-    })
+    propInterceptors.forEach((interceptor) => {
+      porpsMap = porpsMap.merge(Map(interceptor(porpsMap.toJS(), this) || {}));
+    });
 
-    return porpsMap.toJS()
-
+    return porpsMap.toJS();
   }
 
-  myBlockRenderer = (contentBlock) => {
+
+  myBlockRenderer = (contentBlock, superProps) => {
     const type = contentBlock.getType();
-    if(type==="atomic"){
+    if (type === "atomic") {
+      const Com = (props) => {
+        const entityKey = props.block.getEntityAt(0)
 
-      const contentState = this.state.editorState.getCurrentContent();
-      const block = contentState.getBlockForKey(contentBlock.key);
-
-      const entityKey = block.getEntityAt(0);
-      const entity = contentState.getEntity(entityKey);
-      const mediaType = entity.getType();
-      const mediaData = entity.getData()
-  
-      if (mediaType === "IMAGE") {
-        const mediaData = entity.getData();
-        let superProps = this;
-        let editor = {...this.state.editorState}
-
-        editor.editorProps = this.getEditorProps(this.props)
-        editor.lockOrUnlockEditor = BraftEditor.lockOrUnlockEditor
-        console.log(superProps)
-
+        if (!entityKey) {
+          return null
+        }
+        const entity = props.contentState.getEntity(entityKey)
+        const mediaData = entity.getData()
+        const mediaType = entity.getType()
         const mediaProps = {
-          editor,
           ...superProps,
-          block: contentBlock,
-          mediaData,
-          entityKey,
-          imageControls:this.imageControls
-        };
-        const Com= () => <MediaComponent {...mediaProps} />
-        return {
-          component: Com,
-          editable: false,
-        };
+          block: props.block,
+          mediaData, entityKey
+        }
+        if (mediaType === 'IMAGE') {
+          return <MediaComponent { ...mediaProps } />
+        } else if (mediaType === 'AUDIO') {
+          return <Audio { ...mediaProps } />
+        } else if (mediaType === 'VIDEO') {
+          return <Video { ...mediaProps } />
+        } else if (mediaType === 'EMBED') {
+          return <Embed { ...mediaProps } />
+        } else if (mediaType === 'HR') {
+          return <HorizontalLine { ...mediaProps } />
+        }
+        if (superProps.extendAtomics) {
+          const atomics = superProps.extendAtomics
+          for (let i = 0; i < atomics.length; i++) {
+            if (mediaType === atomics[i].type) {
+              const Component = atomics[i].component
+              return <Component {...mediaProps} />
+            }
+          }
+        }
+        return null
       }
+      return {
+        component: Com,
+        editable: false,
+      };
     }
-  }
+  };
 
   handleChange = (editorState) => {
     this.logRAW();
+    this.logHTML();
     this.setState({ editorState });
   };
 

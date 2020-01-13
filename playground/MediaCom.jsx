@@ -206,7 +206,7 @@ export default class MediaComponent extends React.Component {
                   </div>
                 </div>
               ) : null}
-              {/* {tipEditorVisible ? (
+              {tipEditorVisible ? (
                 <div className="bf-image-link-editor">
                   <div className="editor-input-group">
                     <input
@@ -221,7 +221,7 @@ export default class MediaComponent extends React.Component {
                     </button>
                   </div>
                 </div>
-              ) : null} */}
+              ) : null}
               {renderedControlItems}
               <i
                 style={{ marginLeft: toolbarOffset * -1 }}
