@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import BraftEditor from "../src";
+import BraftEditor from 'braft-editor'
 import ColorPicker from "braft-extensions/dist/color-picker";
 import { Editor, EditorState } from "draft-js";
 import { Map } from "immutable";
@@ -17,6 +17,8 @@ import Video from 'renderers/atomics/Video'
 import Audio from 'renderers/atomics/Audio'
 import Embed from 'renderers/atomics/Embed'
 import HorizontalLine from 'renderers/atomics/HorizontalLine'
+import 'braft-editor/dist/index.css'
+import update from 'immutability-helper'
 
 const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
   if (!block || !block.key) {
@@ -145,49 +147,7 @@ const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
   }
 };
 
-const tableAtomicBlock = (block, contentState, blockNodeAttributes) => {
-  console.log(block)
-  const previousBlock = contentState.getBlockBefore(block.key)
-  const nextBlock = contentState.getBlockAfter(block.key)
-  const previousBlockType = previousBlock ? previousBlock.getType() : null
-  const previousBlockData = previousBlock ? previousBlock.getData().toJS() : {}
-  const nextBlockType = nextBlock ? nextBlock.getType() : null
-  const nextBlockData = nextBlock ? nextBlock.getData().toJS() : {}
 
-  let start = ''
-  let end = ''
-  let blockStyle = ''
-
-  if (previousBlockType !== 'table-cell') {
-    start = `<table style="min-height: 44px; line-height: 25px; border-collapse: collapse ;border:1px solid #cccccc;width:100%;table-layout: fixed;"><tr style="background:#f9f9f9"><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
-  } else if (previousBlockData.rowIndex !== block.data.rowIndex) {
-    start = `<tr><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
-  } else {
-    start = `<td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
-  }
-
-  if (nextBlockType !== 'table-cell') {
-    end = '</td></tr></table>'
-  } else if (nextBlockData.rowIndex !== block.data.rowIndex) {
-    end = '</td></tr>'
-  } else {
-    end = '</td>'
-  }
-
-  if (!previousBlockType) {
-    start = '<p></p>' + start
-  }
-
-  if (!nextBlockType) {
-    end += '<p></p>'
-  }
-  const newBlock = update(block, {
-     $set: { type:"unstyled",data: block.cata,entityRanges:block.entityRanges,inlineStyleRanges:block.inlineStyleRanges,key:block.key,text:block.text} 
-  });
-  console.log(newBlock)
-  console.log(editorState.toHTML(newBlock))
-  return start + editorState.toHTML(newBlock) +end
-};
 
 const emoticons = defaultEmoticons.map((item) =>
   require(`braft-extensions/dist/assets/${item}`),
@@ -218,7 +178,52 @@ class Demo extends React.Component {
       return;
     }
   };
+  tableAtomicBlock = (block, contentState, blockNodeAttributes) => {
+    console.log(block)
+    const previousBlock = contentState.getBlockBefore(block.key)
+    const nextBlock = contentState.getBlockAfter(block.key)
+    const previousBlockType = previousBlock ? previousBlock.getType() : null
+    const previousBlockData = previousBlock ? previousBlock.getData().toJS() : {}
+    const nextBlockType = nextBlock ? nextBlock.getType() : null
+    const nextBlockData = nextBlock ? nextBlock.getData().toJS() : {}
+  
+    let start = ''
+    let end = ''
+    let blockStyle = ''
 
+  
+    if (previousBlockType !== 'table-cell') {
+      start = `<table style="min-height: 44px; line-height: 25px; border-collapse: collapse ;border:1px solid #cccccc;width:100%;table-layout: fixed;"><tr style="background:#f9f9f9"><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+    } else if (previousBlockData.rowIndex !== block.data.rowIndex) {
+      start = `<tr><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+    } else {
+      start = `<td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+    }
+  
+    if (nextBlockType !== 'table-cell') {
+      end = '</td></tr></table>'
+    } else if (nextBlockData.rowIndex !== block.data.rowIndex) {
+      end = '</td></tr>'
+    } else {
+      end = '</td>'
+    }
+  
+    if (!previousBlockType) {
+      start = '<p></p>' + start
+    }
+  
+    if (!nextBlockType) {
+      end += '<p></p>'
+    }
+    const newBlock = update(block, {
+       $set: { type:"unstyled",data: block.cata,entityRanges:block.entityRanges,inlineStyleRanges:block.inlineStyleRanges,key:block.key,text:block.text} 
+    });
+    console.log(newBlock)
+    const xx = {blocks:[newBlock],entityMap:{}}
+    console.log(JSON.stringify(xx))
+    console.log(BraftEditor.createEditorState(JSON.stringify(xx)).toRAW())
+    return start + BraftEditor.createEditorState(JSON.stringify(xx)).toHTML() +end
+  };
   settipText = ({ currentTarget }) => {
     let { value } = currentTarget;
 
@@ -264,56 +269,7 @@ class Demo extends React.Component {
       tipText: "",
       readOnly: false,
       // editorState: BraftEditor.createEditorState('<p data-foo="adasd" class="my-classname"><img src="https://www.baidu.com/img/bd_logo1.png?where=super" /><span style="color:#e25041;">asdasdasda</span>asdads</p>')
-      editorState: BraftEditor.createEditorState({
-        blocks: [
-          {
-            key: "6vmpa",
-            text: "",
-            type: "unstyled",
-            depth: 0,
-            inlineStyleRanges: [],
-            entityRanges: [],
-            data: {
-              nodeAttributes: { "data-foo": "adasd", class: "my-classname" },
-            },
-          },
-          {
-            key: "843pk",
-            text: "ameihuanyu",
-            type: "atomic",
-            depth: 0,
-            inlineStyleRanges: [],
-            entityRanges: [{ offset: 0, length: 1, key: 0 }],
-            data: {
-              nodeAttributes: { class: "media-wrap image-wrap" },
-              float: "",
-              alignment: "",
-            },
-          },
-          {
-            key: "34sh7",
-            text: "asdasdasdaasdads",
-            type: "unstyled",
-            depth: 0,
-            inlineStyleRanges: [
-              { offset: 0, length: 10, style: "COLOR-E25041" },
-            ],
-            entityRanges: [],
-            data: { nodeAttributes: {} },
-          },
-        ],
-        entityMap: {
-          "0": {
-            type: "IMAGE",
-            mutability: "IMMUTABLE",
-            data: {
-              meta: {},
-              url: "https://www.baidu.com/img/bd_logo1.png?where=super",
-              tipText: "31231",
-            },
-          },
-        },
-      }),
+      editorState: BraftEditor.createEditorState(),
     };
   }
 
@@ -374,14 +330,14 @@ class Demo extends React.Component {
     console.log(
       this.state.editorState.toHTML({
         blockExportFn: (contentState, block) => {
-          console.log(block.type)
-          if (block.type === "atomic") {
-            const { nodeAttributes = {} } = block.data;
-            return convertAtomicBlock(block, contentState, nodeAttributes);
-          }
+
+          // if (block.type === "atomic") {
+          //   const { nodeAttributes = {} } = block.data;
+          //   return convertAtomicBlock(block, contentState, nodeAttributes);
+          // }
           if(block.type === "table-cell"){
             const { nodeAttributes = {} } = block.data;
-            return tableAtomicBlock(block, contentState, nodeAttributes);
+            return this.tableAtomicBlock(block, contentState, nodeAttributes);
           }
         },
       }),
