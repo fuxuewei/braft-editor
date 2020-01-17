@@ -13,11 +13,11 @@ import "braft-extensions/dist/color-picker.css";
 import "braft-extensions/dist/table.css";
 import "braft-extensions/dist/code-highlighter.css";
 import MediaComponent from "./MediaCom.jsx";
-import { getPropInterceptors } from "helpers/extension";
 import Video from 'renderers/atomics/Video'
 import Audio from 'renderers/atomics/Audio'
 import Embed from 'renderers/atomics/Embed'
 import HorizontalLine from 'renderers/atomics/HorizontalLine'
+
 const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
   if (!block || !block.key) {
     return <p></p>;
@@ -144,6 +144,51 @@ const convertAtomicBlock = (block, contentState, blockNodeAttributes) => {
     return <p></p>;
   }
 };
+
+const tableAtomicBlock = (block, contentState, blockNodeAttributes) => {
+  console.log(block)
+  const previousBlock = contentState.getBlockBefore(block.key)
+  const nextBlock = contentState.getBlockAfter(block.key)
+  const previousBlockType = previousBlock ? previousBlock.getType() : null
+  const previousBlockData = previousBlock ? previousBlock.getData().toJS() : {}
+  const nextBlockType = nextBlock ? nextBlock.getType() : null
+  const nextBlockData = nextBlock ? nextBlock.getData().toJS() : {}
+
+  let start = ''
+  let end = ''
+  let blockStyle = ''
+
+  if (previousBlockType !== 'table-cell') {
+    start = `<table style="min-height: 44px; line-height: 25px; border-collapse: collapse ;border:1px solid #cccccc;width:100%;table-layout: fixed;"><tr style="background:#f9f9f9"><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+  } else if (previousBlockData.rowIndex !== block.data.rowIndex) {
+    start = `<tr><td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+  } else {
+    start = `<td${blockStyle} colSpan="${block.data.colSpan}" rowSpan="${block.data.rowSpan}">`
+  }
+
+  if (nextBlockType !== 'table-cell') {
+    end = '</td></tr></table>'
+  } else if (nextBlockData.rowIndex !== block.data.rowIndex) {
+    end = '</td></tr>'
+  } else {
+    end = '</td>'
+  }
+
+  if (!previousBlockType) {
+    start = '<p></p>' + start
+  }
+
+  if (!nextBlockType) {
+    end += '<p></p>'
+  }
+  const newBlock = update(block, {
+     $set: { type:"unstyled",data: block.cata,entityRanges:block.entityRanges,inlineStyleRanges:block.inlineStyleRanges,key:block.key,text:block.text} 
+  });
+  console.log(newBlock)
+  console.log(editorState.toHTML(newBlock))
+  return start + editorState.toHTML(newBlock) +end
+};
+
 const emoticons = defaultEmoticons.map((item) =>
   require(`braft-extensions/dist/assets/${item}`),
 );
@@ -272,27 +317,6 @@ class Demo extends React.Component {
     };
   }
 
-  getEditorProps(props) {
-    props = props || this.props;
-
-    const { value, defaultValue, onChange, ...restProps } = props; // eslint-disable-line no-unused-vars
-    const propInterceptors = getPropInterceptors(
-      restProps.editorId || restProps.id,
-    );
-
-    if (propInterceptors.length === 0) {
-      return restProps;
-    }
-
-    let porpsMap = Map(restProps);
-
-    propInterceptors.forEach((interceptor) => {
-      porpsMap = porpsMap.merge(Map(interceptor(porpsMap.toJS(), this) || {}));
-    });
-
-    return porpsMap.toJS();
-  }
-
 
   myBlockRenderer = (contentBlock, superProps) => {
     const type = contentBlock.getType();
@@ -341,7 +365,7 @@ class Demo extends React.Component {
   };
 
   handleChange = (editorState) => {
-    this.logRAW();
+    // this.logRAW();
     this.logHTML();
     this.setState({ editorState });
   };
@@ -350,10 +374,14 @@ class Demo extends React.Component {
     console.log(
       this.state.editorState.toHTML({
         blockExportFn: (contentState, block) => {
+          console.log(block.type)
           if (block.type === "atomic") {
             const { nodeAttributes = {} } = block.data;
-            console.log(block);
             return convertAtomicBlock(block, contentState, nodeAttributes);
+          }
+          if(block.type === "table-cell"){
+            const { nodeAttributes = {} } = block.data;
+            return tableAtomicBlock(block, contentState, nodeAttributes);
           }
         },
       }),
